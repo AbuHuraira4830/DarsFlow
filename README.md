@@ -1,6 +1,8 @@
 # DarsFlow
 
-DarsFlow is a validation prototype for small Quran, Arabic and Islamic studies academies. It explores how a short teacher observation can become a reviewed parent update, teacher handover, and structured progress record.
+DarsFlow is an interactive validation prototype for small Quran, Arabic and Islamic studies academies. It turns one structured teacher observation into three deterministic drafts: a parent update, a private teacher handover, and a management summary.
+
+The prototype includes conditional attendance handling, an approved fictional sample, form validation, copy controls, and reset behaviour. Every output remains a draft for human review.
 
 ## Technology
 
@@ -8,7 +10,9 @@ DarsFlow is a validation prototype for small Quran, Arabic and Islamic studies a
 - React
 - TypeScript
 - Tailwind CSS
+- React Aria Components
 - ESLint
+- Vitest
 
 ## Prerequisite
 
@@ -27,6 +31,8 @@ Open http://localhost:3000.
 
 ```bash
 npm run lint
+npm run typecheck
+npm test
 npm run build
 ```
 
@@ -37,3 +43,6 @@ npm run build
 - No database
 - No authentication
 - No WhatsApp integration
+- No persistence or external sending
+
+All academy, teacher, and student names displayed by the prototype are fictional demonstration data.

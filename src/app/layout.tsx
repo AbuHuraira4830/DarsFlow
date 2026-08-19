@@ -8,9 +8,9 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "DarsFlow | Teacher Updates Made Simple",
+  title: "DarsFlow | One Lesson Note, Three Clear Drafts",
   description:
-    "Turn short teacher observations into reviewed parent updates, teacher handovers, and structured progress records.",
+    "Turn one teacher observation into a reviewed parent update, teacher handover, and management summary.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
