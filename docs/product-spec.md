@@ -1,5 +1,7 @@
 # DarsFlow Validation Prototype Specification
 
+> Phase status: The validation prototype described below is complete and preserved as the public, fictional, no-storage demonstration. The approved Phase 2 scope is the multi-tenant academy SaaS MVP defined in Section 23.
+
 ## 1. Document Status
 
 - Product: DarsFlow
@@ -494,3 +496,35 @@ Possible later features include:
 - billing
 
 Their inclusion requires evidence from customer validation and separate approval.
+
+## 23. Phase 2 — Multi-tenant Academy SaaS MVP
+
+### 23.1 Product boundary
+
+Phase 2 adds authenticated, persistent academy workspaces while preserving the original public demo. An academy is the tenant and paying customer. Academy-owned teachers, students, guardians, classes, lessons, drafts, shares, subscriptions, payments and audit events must carry an academy boundary enforced on the server.
+
+Supported roles are platform administrator, academy owner, academy manager and teacher. One user may hold memberships in multiple academies. Parents and guardians initially receive reviewed updates through external compose/share actions and do not require accounts.
+
+### 23.2 Academy lifecycle
+
+Owners register with email and password, create an academy, choose timezone and teaching tracks, and begin a configurable trial. Owners and managers manage teachers, expiring invitations, students, guardians, one-to-one classes and small groups. Teachers are limited to assigned classes and students.
+
+The local development database contains fictional demonstration seed records only. No predictable account password is seeded.
+
+### 23.3 Lesson and communication lifecycle
+
+Each student in a group class receives an individual attendance and progress record. Saved lesson facts generate distinct parent, teacher and management drafts. Private teacher notes never enter parent drafts. Drafts retain source-version awareness and must be reviewed before sharing.
+
+WhatsApp, native share and email actions open an external compose surface. They do not prove delivery. Honest states are Draft, Reviewed, Share opened and Manually marked sent.
+
+### 23.4 Subscription and platform operations
+
+Plans and currency are configurable rather than hardcoded commercial decisions. Academy subscriptions track trial dates, status and student/teacher capacity. Manual payment references can be submitted for platform-admin review; no payment is charged automatically and no payment account details are invented.
+
+Platform administration is restricted to explicitly configured administrator email addresses. No default administrator password may exist.
+
+### 23.5 Technical and security requirements
+
+The MVP uses maintained email/password authentication, securely hashed credentials, protected database-backed sessions, role checks, validated input, expiring single-use invitations, tenant-scoped queries, safe migrations and audit events. Local SQLite development requires no external account; production should migrate to managed PostgreSQL and durable storage before serving customer data.
+
+This MVP does not claim regulatory certification, automatic WhatsApp/email delivery, payment-gateway processing, native mobile applications, video classes, calendar integration, automatic Tajweed assessment or autonomous educational decisions.

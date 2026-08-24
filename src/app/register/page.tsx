@@ -1,0 +1,4 @@
+import Link from "next/link";
+import { DarsFlowLogo } from "@/components/darsflow-logo";
+import { AuthForm } from "@/components/auth-form";
+export default function RegisterPage() { return <main className="grid min-h-screen place-items-center bg-[#f4f8f7] p-5"><section className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-9"><Link href="/"><DarsFlowLogo /></Link><p className="mt-8 text-xs font-bold uppercase tracking-widest text-teal-700">14-day trial · no payment details</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Create your academy account</h1><p className="mt-2 text-slate-600">Set up a private workspace for your teaching team.</p><AuthForm mode="register" /><p className="mt-6 text-center text-sm text-slate-600">Already registered? <Link href="/login" className="font-bold text-teal-700">Sign in</Link></p></section></main>; }

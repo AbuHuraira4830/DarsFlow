@@ -147,9 +147,10 @@ export function DarsFlowDemo() {
           <a href="#top" className="rounded-lg focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-teal-600">
             <DarsFlowLogo />
           </a>
-          <button type="button" onClick={() => moveToDemo()} className={`${primaryButton} min-h-9 px-3.5 py-2 text-xs sm:min-h-10 sm:px-4 sm:text-sm`}>
-            Try the demo <ArrowIcon />
-          </button>
+          <div className="flex items-center gap-2">
+            <a href="/login" className="hidden min-h-10 items-center px-3 text-sm font-bold text-slate-600 sm:inline-flex">Sign in</a>
+            <a href="/register" className={`${primaryButton} min-h-9 px-3.5 py-2 text-xs sm:min-h-10 sm:px-4 sm:text-sm`}>Start free trial <ArrowIcon /></a>
+          </div>
         </div>
       </header>
 
@@ -168,12 +169,8 @@ export function DarsFlowDemo() {
                 Turn a teacher’s lesson observation into a parent update, next-teacher handover and management summary—ready to review in one calm workspace.
               </p>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                <button type="button" onClick={() => handleLoadSample(true)} className={primaryButton}>
-                  Try the approved example <ArrowIcon />
-                </button>
-                <button type="button" onClick={() => moveToDemo()} className={secondaryButton}>
-                  Open blank workspace
-                </button>
+                <a href="/register" className={primaryButton}>Start free trial <ArrowIcon /></a>
+                <button type="button" onClick={() => handleLoadSample(true)} className={secondaryButton}>Try interactive demo</button>
               </div>
               <p className="mt-4 flex items-center gap-2 text-xs font-medium text-slate-500">
                 <ShieldIcon /> Fictional data only · nothing is saved or sent
@@ -198,7 +195,7 @@ export function DarsFlowDemo() {
                   <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[0.6875rem] font-bold text-amber-900">Fictional demo academy</span>
                 </div>
                 <h2 id="demo-title" className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl">Prepare the lesson record</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Workspace: <strong className="text-slate-800">{ACADEMY_NAME}</strong>. No entry is stored or transmitted.</p>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Public demo: <strong className="text-slate-800">{ACADEMY_NAME}</strong>. This fictional demonstration is not saved. Signed-in academy records use private persistent workspaces.</p>
               </div>
               <button type="button" onClick={() => handleLoadSample()} className={secondaryButton}>
                 <SparkIcon /> Load approved sample

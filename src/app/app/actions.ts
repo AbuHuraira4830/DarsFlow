@@ -1,0 +1,37 @@
+"use server";
+import { createHash, randomBytes } from "node:crypto";
+import { redirect } from "next/navigation";
+import { and, eq } from "drizzle-orm";
+import { generateSaasDrafts, guardianSchema } from "@/lib/saas";
+import { db } from "@/server/db";
+import { attendance, classes, generatedDrafts, guardians, invitations, lessons, paymentRequests, studentGuardians, students } from "@/server/schema";
+import { requireWorkspace } from "@/server/session";
+
+const now = () => new Date().toISOString();
+export async function addStudent(form: FormData) {
+  const ctx = await requireWorkspace(); const studentId = crypto.randomUUID(); const stamp = now();
+  const guardian = guardianSchema.safeParse({ name: form.get("guardianName"), relationship: form.get("relationship"), whatsapp: form.get("whatsapp"), email: form.get("email"), preferredChannel: form.get("preferredChannel") });
+  const displayName = String(form.get("displayName") ?? "").trim(); const learningTrack = String(form.get("learningTrack") ?? "").trim();
+  if (displayName.length < 2 || !learningTrack || !guardian.success) redirect("/app/students?error=Check+the+student+and+guardian+details.");
+  db.transaction((tx) => { const guardianId = crypto.randomUUID(); tx.insert(students).values({ id: studentId, academyId: ctx.academy.id, displayName, learningTrack, currentLevel: String(form.get("currentLevel") ?? "").trim() || null, internalNotes: String(form.get("internalNotes") ?? "").trim() || null, createdAt: stamp, updatedAt: stamp }).run(); tx.insert(guardians).values({ id: guardianId, academyId: ctx.academy.id, ...guardian.data, whatsapp: guardian.data.whatsapp || null, email: guardian.data.email || null, createdAt: stamp, updatedAt: stamp }).run(); tx.insert(studentGuardians).values({ studentId, guardianId, receiveUpdates: true }).run(); });
+  redirect("/app/students?created=1");
+}
+export async function createInvitation(form: FormData) {
+  const ctx = await requireWorkspace(); if (!['owner','manager'].includes(ctx.membership.role)) throw new Error("Not authorized.");
+  const email = String(form.get("email") ?? "").trim().toLowerCase(); const role = String(form.get("role") ?? "teacher"); if (!/^\S+@\S+\.\S+$/.test(email) || !['teacher','manager'].includes(role)) redirect("/app/teachers?error=Enter+a+valid+invitation.");
+  const token = randomBytes(32).toString("base64url"); const stamp = now(); db.insert(invitations).values({ id: crypto.randomUUID(), academyId: ctx.academy.id, email, role, tokenHash: createHash("sha256").update(token).digest("hex"), expiresAt: new Date(Date.now()+7*86400000).toISOString(), invitedBy: ctx.user.id, createdAt: stamp, updatedAt: stamp }).run();
+  redirect(`/app/teachers?invite=${encodeURIComponent(token)}`);
+}
+export async function createClass(form: FormData) {
+  const ctx = await requireWorkspace(); if (!['owner','manager'].includes(ctx.membership.role)) throw new Error("Not authorized."); const stamp=now();
+  const name=String(form.get("name")??"").trim(); const track=String(form.get("track")??"").trim(); if(!name||!track) redirect("/app/classes?error=Class+name+and+track+are+required.");
+  db.insert(classes).values({ id:crypto.randomUUID(), academyId:ctx.academy.id, name, learningTrack:track, format:String(form.get("format")??"one_to_one"), meetingDays:form.getAll("days").map(String), meetingTime:String(form.get("time")??"17:00"), createdAt:stamp, updatedAt:stamp }).run(); redirect("/app/classes?created=1");
+}
+export async function recordLesson(form: FormData) {
+  const ctx=await requireWorkspace(); const studentId=String(form.get("studentId")??""); const student=db.select().from(students).where(and(eq(students.id,studentId),eq(students.academyId,ctx.academy.id))).get(); if(!student) throw new Error("Student not found in this academy.");
+  const status=String(form.get("attendance")??""); const attended=status==='Attended'||status==='Late'; const reference=String(form.get("lessonReference")??"").trim(); const strength=String(form.get("whatWentWell")??"").trim(); const nextLesson=String(form.get("nextLesson")??"").trim(); if(!status||(attended&&(!reference||!strength||!nextLesson))) redirect("/app/lessons/new?error=Complete+the+required+lesson+details.");
+  const idempotencyKey=String(form.get("idempotencyKey")??""); if(db.select().from(lessons).where(eq(lessons.idempotencyKey,idempotencyKey)).get()) redirect("/app/lessons?duplicate=1"); const stamp=now(); const lessonId=crypto.randomUUID(); const attendanceId=crypto.randomUUID();
+  const input={studentName:student.displayName,teacherName:ctx.user.name,lessonDate:String(form.get("lessonDate")),attendance:status,learningTrack:student.learningTrack,lessonReference:reference,whatWentWell:strength,needsPractice:String(form.get("needsPractice")??""),homework:String(form.get("homework")??""),nextLesson,engagement:String(form.get("engagement")??""),privateNote:String(form.get("privateNote")??"")}; const drafts=generateSaasDrafts(input);
+  db.transaction((tx)=>{tx.insert(lessons).values({id:lessonId,academyId:ctx.academy.id,classId:null,teacherMembershipId:ctx.membership.id,lessonDate:input.lessonDate,lessonReference:reference||null,learningTrack:student.learningTrack,privateNote:input.privateNote||null,sourceVersion:1,idempotencyKey,enteredLate:input.lessonDate<new Date().toISOString().slice(0,10),createdAt:stamp,updatedAt:stamp}).run(); tx.insert(attendance).values({id:attendanceId,lessonId,studentId,status,whatWentWell:strength||null,needsPractice:input.needsPractice||null,homework:input.homework||null,nextLesson:nextLesson||null,engagement:input.engagement||null,context:{},createdAt:stamp,updatedAt:stamp}).run(); for(const [kind,content] of Object.entries(drafts)) tx.insert(generatedDrafts).values({id:crypto.randomUUID(),academyId:ctx.academy.id,lessonId,studentId,kind,content,sourceVersion:1,status:'draft',createdAt:stamp,updatedAt:stamp}).run();}); redirect(`/app/lessons/${lessonId}`);
+}
+export async function submitPayment(form:FormData){const ctx=await requireWorkspace();const ref=String(form.get('reference')??'').trim();if(!ref)redirect('/app/billing?error=Payment+reference+is+required.');const stamp=now();db.insert(paymentRequests).values({id:crypto.randomUUID(),academyId:ctx.academy.id,reference:ref,note:String(form.get('note')??'').trim()||null,status:'pending',createdAt:stamp,updatedAt:stamp}).run();redirect('/app/billing?submitted=1');}
