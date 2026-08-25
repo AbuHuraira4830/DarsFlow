@@ -49,6 +49,7 @@ Register normally, then add that account’s email to `PLATFORM_ADMIN_EMAILS` in
 npm run lint
 npm run typecheck
 npm test
+npm run test:e2e
 npm run build
 git diff --check
 ```
