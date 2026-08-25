@@ -1,10 +1,179 @@
 import Link from "next/link";
 import { and, eq } from "drizzle-orm";
 import { createClass, setClassEnrollment } from "../actions";
-import { Card, Empty, PageHeader, button, input } from "@/components/workspace-ui";
+import {
+  Card,
+  Empty,
+  PageHeader,
+  button,
+  input,
+} from "@/components/workspace-ui";
 import { db } from "@/server/db";
 import { classes, classEnrollments, students } from "@/server/schema";
 import { requireWorkspace } from "@/server/session";
 
-export default async function ClassesPage(){const ctx=await requireWorkspace();const list=await db.select().from(classes).where(eq(classes.academyId,ctx.academy.id));const studentList=await db.select().from(students).where(eq(students.academyId,ctx.academy.id));const enrollments=await db.select().from(classEnrollments).innerJoin(students,and(eq(students.id,classEnrollments.studentId),eq(students.academyId,ctx.academy.id)));const canManage=['owner','manager'].includes(ctx.membership.role);return <><PageHeader eyebrow="Teaching schedule" title="Classes and enrollments" description={`Meeting times use ${ctx.academy.timezone}. One-to-one and small groups are supported.`}/><div className="grid gap-5 lg:grid-cols-2"><Card title="Scheduled classes">{list.length?<div className="mt-3 space-y-3">{list.map(c=><div key={c.id} className="rounded-xl border border-slate-200 p-4"><p className="font-bold">{c.name}</p><p className="text-sm text-slate-500">{c.learningTrack} Â· {c.format.replaceAll('_',' ')} Â· {c.meetingDays.join(', ')} {c.meetingTime}</p><Link href={`/app/classes/${c.id}/record`} className="mt-3 inline-block min-h-10 font-bold text-teal-700">Record group lesson</Link><div className="mt-2 text-xs">{enrollments.filter(e=>e.class_enrollments.classId===c.id&&e.class_enrollments.active).map(e=><span key={e.students.id} className="mr-2 rounded bg-teal-50 px-2 py-1">{e.students.displayName}</span>)}</div></div>)}</div>:<Empty>No classes yet.</Empty>}</Card>{canManage&&<Card title="Create class" tone="sand"><form action={createClass} className="mt-4 space-y-4"><Field name="name" label="Class name"/><Field name="track" label="Learning track"/><label className="block text-sm font-bold">Format<select name="format" className={input}><option value="one_to_one">One-to-one</option><option value="small_group">Small group</option></select></label><fieldset><legend className="text-sm font-bold">Meeting days</legend><div className="mt-2 flex flex-wrap gap-3">{['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(d=><label key={d} className="text-sm"><input type="checkbox" name="days" value={d}/> {d}</label>)}</div></fieldset><Field name="time" label="Typical time" type="time"/><button className={button}>Create class</button></form></Card>}</div>{canManage&&<Card title="Manage enrollment" tone="mint"><form action={setClassEnrollment} className="mt-3 grid gap-3 sm:grid-cols-3"><label className="text-sm font-bold">Class<select name="classId" className={input}>{list.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label className="text-sm font-bold">Student<select name="studentId" className={input}>{studentList.map(s=><option key={s.id} value={s.id}>{s.displayName}</option>)}</select></label><label className="text-sm font-bold">Status<select name="active" className={input}><option value="true">Enrolled</option><option value="false">Removed</option></select></label><button className={`${button} sm:col-span-3`}>Update enrollment</button></form></Card>}</>};
-function Field({name,label,type='text'}:{name:string;label:string;type?:string}){return <label className="block text-sm font-bold">{label}<input required name={name} type={type} className={input}/></label>}
+export default async function ClassesPage() {
+  const ctx = await requireWorkspace();
+  const list = await db
+    .select()
+    .from(classes)
+    .where(eq(classes.academyId, ctx.academy.id));
+  const studentList = await db
+    .select()
+    .from(students)
+    .where(eq(students.academyId, ctx.academy.id));
+  const enrollments = await db
+    .select()
+    .from(classEnrollments)
+    .innerJoin(
+      students,
+      and(
+        eq(students.id, classEnrollments.studentId),
+        eq(students.academyId, ctx.academy.id),
+      ),
+    );
+  const canManage = ["owner", "manager"].includes(ctx.membership.role);
+  return (
+    <>
+      <PageHeader
+        eyebrow="Teaching schedule"
+        title="Classes and enrollments"
+        description={`Meeting times use ${ctx.academy.timezone}. One-to-one and small groups are supported.`}
+      />
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Card title="Scheduled classes">
+          {list.length ? (
+            <div className="mt-3 space-y-3">
+              {list.map((c) => (
+                <div
+                  key={c.id}
+                  className="rounded-xl border border-slate-200 p-4"
+                >
+                  <p className="font-bold">{c.name}</p>
+                  <p className="text-sm text-slate-500">
+                  {c.learningTrack} · {c.format.replaceAll("_", " ")} ·{" "}
+                    {c.meetingDays.join(", ")} {c.meetingTime}
+                  </p>
+                  <Link
+                    href={`/app/classes/${c.id}/record`}
+                    className="mt-3 inline-block min-h-10 font-bold text-teal-700"
+                  >
+                    Record group lesson
+                  </Link>
+                  <div className="mt-2 text-xs">
+                    {enrollments
+                      .filter(
+                        (e) =>
+                          e.class_enrollments.classId === c.id &&
+                          e.class_enrollments.active,
+                      )
+                      .map((e) => (
+                        <span
+                          key={e.students.id}
+                          className="mr-2 rounded bg-teal-50 px-2 py-1"
+                        >
+                          {e.students.displayName}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Empty>No classes yet.</Empty>
+          )}
+        </Card>
+        {canManage && (
+          <Card title="Create class" tone="sand">
+            <form action={createClass} className="mt-4 space-y-4">
+              <Field name="name" label="Class name" />
+              <Field name="track" label="Learning track" />
+              <label className="block text-sm font-bold">
+                Format
+                <select name="format" className={input}>
+                  <option value="one_to_one">One-to-one</option>
+                  <option value="small_group">Small group</option>
+                </select>
+              </label>
+              <fieldset>
+                <legend className="text-sm font-bold">Meeting days</legend>
+                <div className="mt-2 flex flex-wrap gap-3">
+                  {[
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday",
+                    "Sunday",
+                  ].map((d) => (
+                    <label key={d} className="text-sm">
+                      <input type="checkbox" name="days" value={d} /> {d}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <Field name="time" label="Typical time" type="time" />
+              <button className={button}>Create class</button>
+            </form>
+          </Card>
+        )}
+      </div>
+      {canManage && (
+        <Card title="Manage enrollment" tone="mint">
+          <form
+            action={setClassEnrollment}
+            className="mt-3 grid gap-3 sm:grid-cols-3"
+          >
+            <label className="text-sm font-bold">
+              Class
+              <select name="classId" className={input}>
+                {list.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm font-bold">
+              Student
+              <select name="studentId" className={input}>
+                {studentList.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.displayName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm font-bold">
+              Status
+              <select name="active" className={input}>
+                <option value="true">Enrolled</option>
+                <option value="false">Removed</option>
+              </select>
+            </label>
+            <button className={`${button} sm:col-span-3`}>
+              Update enrollment
+            </button>
+          </form>
+        </Card>
+      )}
+    </>
+  );
+}
+function Field({
+  name,
+  label,
+  type = "text",
+}: {
+  name: string;
+  label: string;
+  type?: string;
+}) {
+  return (
+    <label className="block text-sm font-bold">
+      {label}
+      <input required name={name} type={type} className={input} />
+    </label>
+  );
+}

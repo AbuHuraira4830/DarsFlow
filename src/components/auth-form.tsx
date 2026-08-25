@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import {PasswordInput} from "@/components/password-input";
 
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
@@ -22,7 +23,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   return <form onSubmit={submit} className="mt-8 space-y-5">
     {mode === "register" && <Field name="name" label="Your name" autoComplete="name" />}
     <Field name="email" label="Email address" type="email" autoComplete="email" />
-    <Field name="password" label="Password" type="password" autoComplete={mode === "register" ? "new-password" : "current-password"} help={mode === "register" ? "Use at least 10 characters." : undefined} />
+    <PasswordInput name="password" label="Password" autoComplete={mode === "register" ? "new-password" : "current-password"} help={mode === "register" ? "Use at least 10 characters, ideally with a unique phrase." : undefined} />
     {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800">{error}</p>}
     <button disabled={busy} className="min-h-12 w-full rounded-xl bg-teal-700 px-5 font-bold text-white transition hover:bg-teal-800 disabled:opacity-60">{busy ? "Please wait…" : mode === "register" ? "Create account" : "Sign in"}</button>
   </form>;

@@ -5,13 +5,18 @@ test("public authentication and academy onboarding work",async({page},testInfo)=
   await page.goto("/register");
   await page.getByLabel("Your name").fill("Fictional Pilot Owner");
   await page.getByLabel("Email address").fill(email);
-  await page.getByLabel("Password").fill("FictionalPass123!");
+  await page.getByLabel("Password",{exact:true}).fill("FictionalPass123!");
+  await expect(page.getByLabel("Password",{exact:true})).toHaveAttribute("type","password");
+  await page.getByRole("button",{name:"Show password"}).click();
+  await expect(page.getByLabel("Password",{exact:true})).toHaveAttribute("type","text");
+  await page.getByRole("button",{name:"Hide password"}).click();
   await page.getByRole("button",{name:"Create account"}).click();
   await expect(page).toHaveURL(/\/onboarding/);
   await page.getByLabel("Academy name").fill(`Amanah ${testInfo.project.name}`);
   await page.getByRole("button",{name:"Finish setup"}).click();
   await expect(page).toHaveURL(/\/app$/);
   await expect(page.getByRole("heading",{name:/Assalamu Alaikum/})).toBeVisible();
+  if(testInfo.project.name==="desktop") await expect(page.getByRole("link",{name:"Home",exact:true})).toHaveAttribute("aria-current","page");
   await page.goto("/app/students");
   await page.getByLabel("Student display name").fill("Maryam T.");
   await page.getByLabel("Learning track").fill("Qaida");
@@ -33,6 +38,14 @@ test("mobile authentication UI has no horizontal overflow",async({page})=>{
   await page.goto("/login");
   expect(await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth)).toBe(false);
   await expect(page.getByRole("button",{name:"Sign in"})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Show password"})).toBeVisible();
+});
+
+test("public custom select supports keyboard selection",async({page})=>{
+  await page.goto("/");
+  const teacher=page.locator("#teacherId");
+  await teacher.focus();await teacher.press("ArrowDown");await teacher.press("Enter");
+  await expect(teacher).not.toContainText("Choose teacher");
 });
 
 test("unauthenticated academy and export routes are protected",async({page})=>{
