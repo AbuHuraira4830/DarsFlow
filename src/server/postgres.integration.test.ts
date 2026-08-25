@@ -36,4 +36,11 @@ describe("PostgreSQL persistence", () => {
     })).rejects.toThrow("rollback requested");
     expect(await database.select().from(schema.academies).where(eq(schema.academies.id,"rollback"))).toHaveLength(0);
   });
+
+  it("preserves lesson revisions and development outbox records", async () => {
+    await database.insert(schema.lessonRevisions).values({id:"revision-1",lessonId:"l1",academyId:"a1",sourceVersion:1,snapshot:{lessonReference:"Qaida page 1"},reason:"Corrected lesson reference",actorUserId:"u1",createdAt:stamp});
+    await database.insert(schema.developmentOutbox).values({id:"outbox-1",kind:"parent_update",recipient:"guardian@example.test",subject:"Lesson update",text:"Fictional reviewed update",createdAt:stamp});
+    expect(await database.select().from(schema.lessonRevisions).where(eq(schema.lessonRevisions.lessonId,"l1"))).toHaveLength(1);
+    expect(await database.select().from(schema.developmentOutbox)).toMatchObject([{kind:"parent_update",recipient:"guardian@example.test"}]);
+  });
 });

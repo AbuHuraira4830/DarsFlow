@@ -12,6 +12,21 @@ test("public authentication and academy onboarding work",async({page},testInfo)=
   await page.getByRole("button",{name:"Finish setup"}).click();
   await expect(page).toHaveURL(/\/app$/);
   await expect(page.getByRole("heading",{name:/Assalamu Alaikum/})).toBeVisible();
+  await page.goto("/app/students");
+  await page.getByLabel("Student display name").fill("Maryam T.");
+  await page.getByLabel("Learning track").fill("Qaida");
+  await page.getByLabel("Guardian name").fill("Fictional Guardian");
+  await page.getByLabel("Relationship").fill("Parent");
+  await page.getByRole("textbox",{name:"Email",exact:true}).fill(`guardian.${Date.now()}@example.test`);
+  await page.getByRole("button",{name:"Add student"}).click();
+  await expect(page.getByText("Maryam T.")).toBeVisible();
+  await page.goto("/app/classes");
+  await page.getByLabel("Class name").fill("Qaida Group");
+  await page.getByLabel("Learning track").fill("Qaida");
+  await page.getByLabel("Monday").check();
+  await page.getByLabel("Typical time").fill("17:00");
+  await page.getByRole("button",{name:"Create class"}).click();
+  await expect(page.getByRole("paragraph").filter({hasText:"Qaida Group"})).toBeVisible();
 });
 
 test("mobile authentication UI has no horizontal overflow",async({page})=>{
