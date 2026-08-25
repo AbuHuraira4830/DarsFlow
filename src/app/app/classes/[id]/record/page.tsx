@@ -2,8 +2,165 @@ import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Card, PageHeader, button, input } from "@/components/workspace-ui";
 import { db } from "@/server/db";
-import { attendance, classEnrollments, classes, lessons, students } from "@/server/schema";
+import {
+  attendance,
+  classEnrollments,
+  classes,
+  lessons,
+  students,
+} from "@/server/schema";
 import { requireWorkspace } from "@/server/session";
 import { recordGroupLesson } from "./actions";
-export default async function GroupRecord({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{lesson?:string}>}){const ctx=await requireWorkspace();const{id}=await params;const query=await searchParams;const target=await db.select().from(classes).where(and(eq(classes.id,id),eq(classes.academyId,ctx.academy.id))).then(r=>r[0]);if(!target)notFound();const enrolled=await db.select({student:students}).from(classEnrollments).innerJoin(students,and(eq(students.id,classEnrollments.studentId),eq(students.academyId,ctx.academy.id))).where(and(eq(classEnrollments.classId,id),eq(classEnrollments.active,true)));const draft=query.lesson?await db.select().from(lessons).where(and(eq(lessons.id,query.lesson),eq(lessons.classId,id),eq(lessons.academyId,ctx.academy.id),eq(lessons.status,"in_progress"))).then(r=>r[0]):null;if(query.lesson&&!draft)notFound();if(draft&&ctx.membership.role==="teacher"&&draft.teacherMembershipId!==ctx.membership.id)notFound();const saved=draft?await db.select().from(attendance).where(eq(attendance.lessonId,draft.id)):[];return <><PageHeader eyebrow="Group attendance" title={target.name} description={draft?"Continue the saved group session without creating duplicate records.":"Each enrolled student receives an individual attendance record and communication drafts."}/><Card><form action={recordGroupLesson} className="space-y-5"><input type="hidden" name="classId" value={id}/>{draft&&<input type="hidden" name="lessonId" value={draft.id}/>}<input type="hidden" name="idempotencyKey" value={draft?.idempotencyKey??crypto.randomUUID()}/><div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-bold">Date<input name="lessonDate" type="date" required defaultValue={draft?.lessonDate??new Date().toISOString().slice(0,10)} className={input}/></label><label className="text-sm font-bold">Shared topic/reference<input name="lessonReference" defaultValue={draft?.lessonReference??""} className={input}/></label></div>{enrolled.map(({student})=>{const row=saved.find(x=>x.studentId===student.id);return <fieldset key={student.id} className="rounded-xl border p-4"><legend className="px-2 font-bold">{student.displayName}</legend><div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-bold">Attendance<select name={`attendance:${student.id}`} defaultValue={row?.status??"Attended"} className={input}>{['Attended','Late','Absent','Excused'].map(x=><option key={x}>{x}</option>)}</select></label><Field name={`strength:${student.id}`} label="Individual progress" value={row?.whatWentWell}/><Field name={`practice:${student.id}`} label="Needs practice" value={row?.needsPractice}/><Field name={`homework:${student.id}`} label="Homework" value={row?.homework}/></div></fieldset>})}<div className="grid gap-3 sm:grid-cols-2"><button name="intent" value="draft" className="min-h-12 rounded-xl border font-bold">Save group draft</button><button name="intent" value="complete" className={button}>Complete individual reports</button></div></form></Card></>}
-function Field({name,label,value}:{name:string;label:string;value?:string|null}){return <label className="text-sm font-bold">{label}<textarea name={name} defaultValue={value??""} className={`${input} min-h-20 py-3`}/></label>}
+import {FormDatePicker,FormSelect} from "@/components/server-form-controls";
+export default async function GroupRecord({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ lesson?: string }>;
+}) {
+  const ctx = await requireWorkspace();
+  const { id } = await params;
+  const query = await searchParams;
+  const target = await db
+    .select()
+    .from(classes)
+    .where(and(eq(classes.id, id), eq(classes.academyId, ctx.academy.id)))
+    .then((r) => r[0]);
+  if (!target) notFound();
+  const enrolled = await db
+    .select({ student: students })
+    .from(classEnrollments)
+    .innerJoin(
+      students,
+      and(
+        eq(students.id, classEnrollments.studentId),
+        eq(students.academyId, ctx.academy.id),
+      ),
+    )
+    .where(
+      and(eq(classEnrollments.classId, id), eq(classEnrollments.active, true)),
+    );
+  const draft = query.lesson
+    ? await db
+        .select()
+        .from(lessons)
+        .where(
+          and(
+            eq(lessons.id, query.lesson),
+            eq(lessons.classId, id),
+            eq(lessons.academyId, ctx.academy.id),
+            eq(lessons.status, "in_progress"),
+          ),
+        )
+        .then((r) => r[0])
+    : null;
+  if (query.lesson && !draft) notFound();
+  if (
+    draft &&
+    ctx.membership.role === "teacher" &&
+    draft.teacherMembershipId !== ctx.membership.id
+  )
+    notFound();
+  const saved = draft
+    ? await db
+        .select()
+        .from(attendance)
+        .where(eq(attendance.lessonId, draft.id))
+    : [];
+  return (
+    <>
+      <PageHeader
+        eyebrow="Group attendance"
+        title={target.name}
+        description={
+          draft
+            ? "Continue the saved group session without creating duplicate records."
+            : "Each enrolled student receives an individual attendance record and communication drafts."
+        }
+      />
+      <Card>
+        <form action={recordGroupLesson} className="space-y-5">
+          <input type="hidden" name="classId" value={id} />
+          {draft && <input type="hidden" name="lessonId" value={draft.id} />}
+          <input
+            type="hidden"
+            name="idempotencyKey"
+            value={draft?.idempotencyKey ?? crypto.randomUUID()}
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormDatePicker name="lessonDate" label="Date" defaultValue={draft?.lessonDate??new Date().toISOString().slice(0,10)} maxValue={new Date().toISOString().slice(0,10)}/>
+            <label className="text-sm font-bold">
+              Shared topic/reference
+              <input
+                name="lessonReference"
+                defaultValue={draft?.lessonReference ?? ""}
+                className={input}
+              />
+            </label>
+          </div>
+          {enrolled.map(({ student }) => {
+            const row = saved.find((x) => x.studentId === student.id);
+            return (
+              <fieldset key={student.id} className="rounded-xl border p-4">
+                <legend className="px-2 font-bold">
+                  {student.displayName}
+                </legend>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <FormSelect name={`attendance:${student.id}`} label="Attendance" defaultValue={row?.status??"Attended"} options={["Attended","Late","Absent","Excused"].map(value=>({value,label:value}))}/>
+                  <Field
+                    name={`strength:${student.id}`}
+                    label="Individual progress"
+                    value={row?.whatWentWell}
+                  />
+                  <Field
+                    name={`practice:${student.id}`}
+                    label="Needs practice"
+                    value={row?.needsPractice}
+                  />
+                  <Field
+                    name={`homework:${student.id}`}
+                    label="Homework"
+                    value={row?.homework}
+                  />
+                </div>
+              </fieldset>
+            );
+          })}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              name="intent"
+              value="draft"
+              className="min-h-12 rounded-xl border font-bold"
+            >
+              Save group draft
+            </button>
+            <button name="intent" value="complete" className={button}>
+              Complete individual reports
+            </button>
+          </div>
+        </form>
+      </Card>
+    </>
+  );
+}
+function Field({
+  name,
+  label,
+  value,
+}: {
+  name: string;
+  label: string;
+  value?: string | null;
+}) {
+  return (
+    <label className="text-sm font-bold">
+      {label}
+      <textarea
+        name={name}
+        defaultValue={value ?? ""}
+        className={`${input} min-h-20 py-3`}
+      />
+    </label>
+  );
+}

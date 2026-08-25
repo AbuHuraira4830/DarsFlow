@@ -1,3 +1,101 @@
-import { eq } from "drizzle-orm";import { addStudent } from "../actions";import { Card,Empty,PageHeader,button,input } from "@/components/workspace-ui";import { db } from "@/server/db";import { students } from "@/server/schema";import { requireWorkspace } from "@/server/session";
-export default async function StudentsPage({searchParams}:{searchParams:Promise<{error?:string;created?:string}>}){const ctx=await requireWorkspace();const list=await db.select().from(students).where(eq(students.academyId,ctx.academy.id));const query=await searchParams;return <><PageHeader eyebrow="People" title="Students and guardians" description="Every student and guardian belongs only to this academy."/>{query.error&&<p className="mb-4 rounded-xl bg-rose-50 p-3 text-sm font-bold text-rose-800">{query.error}</p>}<div className="grid gap-5 lg:grid-cols-[1fr_1.1fr]"><Card title="Current students">{list.length?<div className="mt-3 divide-y divide-slate-100">{list.map(s=><div key={s.id} className="py-3"><p className="font-bold">{s.displayName}</p><p className="text-xs text-slate-500">{s.learningTrack} · {s.currentLevel||'Starting point not set'}{s.archivedAt?' · Archived':''}</p></div>)}</div>:<Empty>No students yet.</Empty>}</Card><Card title="Add student and guardian" tone="mint"><form action={addStudent} className="mt-4 grid gap-4 sm:grid-cols-2"><Field name="displayName" label="Student display name"/><Field name="learningTrack" label="Learning track"/><Field name="currentLevel" label="Current level" required={false}/><Field name="guardianName" label="Guardian name"/><Field name="relationship" label="Relationship"/><Field name="whatsapp" label="WhatsApp (international)" required={false}/><Field name="email" label="Email" type="email" required={false}/><label className="text-sm font-bold">Preferred contact<select name="preferredChannel" className={input}><option value="whatsapp">WhatsApp</option><option value="email">Email</option></select></label><label className="text-sm font-bold sm:col-span-2">Internal note<textarea name="internalNotes" className={`${input} min-h-20 py-3`}/></label><button className={`${button} sm:col-span-2`}>Add student</button></form></Card></div></>}
-function Field({name,label,type='text',required=true}:{name:string;label:string;type?:string;required?:boolean}){return <label className="text-sm font-bold">{label}<input name={name} type={type} required={required} className={input}/></label>}
+import { eq } from "drizzle-orm";
+import { addStudent } from "../actions";
+import {
+  Card,
+  Empty,
+  PageHeader,
+  button,
+  input,
+} from "@/components/workspace-ui";
+import { db } from "@/server/db";
+import { students } from "@/server/schema";
+import { requireWorkspace } from "@/server/session";
+import {FormSelect} from "@/components/server-form-controls";
+export default async function StudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; created?: string }>;
+}) {
+  const ctx = await requireWorkspace();
+  const list = await db
+    .select()
+    .from(students)
+    .where(eq(students.academyId, ctx.academy.id));
+  const query = await searchParams;
+  return (
+    <>
+      <PageHeader
+        eyebrow="People"
+        title="Students and guardians"
+        description="Every student and guardian belongs only to this academy."
+      />
+      {query.error && (
+        <p className="mb-4 rounded-xl bg-rose-50 p-3 text-sm font-bold text-rose-800">
+          {query.error}
+        </p>
+      )}
+      <div className="grid gap-5 lg:grid-cols-[1fr_1.1fr]">
+        <Card title="Current students">
+          {list.length ? (
+            <div className="mt-3 divide-y divide-slate-100">
+              {list.map((s) => (
+                <div key={s.id} className="py-3">
+                  <p className="font-bold">{s.displayName}</p>
+                  <p className="text-xs text-slate-500">
+                    {s.learningTrack} ·{" "}
+                    {s.currentLevel || "Starting point not set"}
+                    {s.archivedAt ? " · Archived" : ""}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Empty>No students yet.</Empty>
+          )}
+        </Card>
+        <Card title="Add student and guardian" tone="mint">
+          <form action={addStudent} className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Field name="displayName" label="Student display name" />
+            <Field name="learningTrack" label="Learning track" />
+            <Field name="currentLevel" label="Current level" required={false} />
+            <Field name="guardianName" label="Guardian name" />
+            <Field name="relationship" label="Relationship" />
+            <Field
+              name="whatsapp"
+              label="WhatsApp (international)"
+              required={false}
+            />
+            <Field name="email" label="Email" type="email" required={false} />
+            <FormSelect name="preferredChannel" label="Preferred contact" defaultValue="whatsapp" options={[{value:"whatsapp",label:"WhatsApp"},{value:"email",label:"Email"}]}/>
+            <label className="text-sm font-bold sm:col-span-2">
+              Internal note
+              <textarea
+                name="internalNotes"
+                className={`${input} min-h-20 py-3`}
+              />
+            </label>
+            <button className={`${button} sm:col-span-2`}>Add student</button>
+          </form>
+        </Card>
+      </div>
+    </>
+  );
+}
+function Field({
+  name,
+  label,
+  type = "text",
+  required = true,
+}: {
+  name: string;
+  label: string;
+  type?: string;
+  required?: boolean;
+}) {
+  return (
+    <label className="text-sm font-bold">
+      {label}
+      <input name={name} type={type} required={required} className={input} />
+    </label>
+  );
+}

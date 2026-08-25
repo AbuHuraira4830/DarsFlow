@@ -1,25 +1,247 @@
 import { and, eq } from "drizzle-orm";
-import { archiveTeacher, assignClassTeacher, assignStudentTeacher, createInvitation, removeClassTeacher, removeStudentTeacher } from "../actions";
-import { Card, Empty, PageHeader, button, input } from "@/components/workspace-ui";
+import {
+  archiveTeacher,
+  assignClassTeacher,
+  assignStudentTeacher,
+  createInvitation,
+  removeClassTeacher,
+  removeStudentTeacher,
+} from "../actions";
+import {
+  Card,
+  Empty,
+  PageHeader,
+  button,
+  input,
+} from "@/components/workspace-ui";
 import { db } from "@/server/db";
-import { classes, classTeachers, invitations, memberships, students, teacherStudents, user } from "@/server/schema";
+import {
+  classes,
+  classTeachers,
+  invitations,
+  memberships,
+  students,
+  teacherStudents,
+  user,
+} from "@/server/schema";
 import { requireWorkspace } from "@/server/session";
 import { invitationState } from "@/lib/saas";
+import {FormSelect} from "@/components/server-form-controls";
 
-export default async function TeachersPage({searchParams}:{searchParams:Promise<{invite?:string;error?:string}>}) {
-  const ctx=await requireWorkspace(); const query=await searchParams; const canManage=['owner','manager'].includes(ctx.membership.role);
-  const invites=await db.select().from(invitations).where(eq(invitations.academyId,ctx.academy.id));
-  const members=await db.select({id:memberships.id,role:memberships.role,active:memberships.active,name:user.name,email:user.email}).from(memberships).innerJoin(user,eq(user.id,memberships.userId)).where(eq(memberships.academyId,ctx.academy.id));
-  const teacherList=members.filter(m=>m.role==='teacher'&&m.active); const classList=await db.select().from(classes).where(eq(classes.academyId,ctx.academy.id)); const studentList=await db.select().from(students).where(eq(students.academyId,ctx.academy.id));
-  const classLinks=await db.select().from(classTeachers).innerJoin(classes,and(eq(classes.id,classTeachers.classId),eq(classes.academyId,ctx.academy.id)));
-  const studentLinks=await db.select().from(teacherStudents).innerJoin(students,and(eq(students.id,teacherStudents.studentId),eq(students.academyId,ctx.academy.id)));
-  return <><PageHeader eyebrow="Team" title="Teachers and assignments" description="Current assignments control future access; historical lesson authorship is preserved."/>
-    {query.invite&&<Card title="Copy this invitation link" tone="mint"><code className="mt-3 block break-all rounded-lg bg-white p-3 text-xs">{`${process.env.BETTER_AUTH_URL??'http://localhost:3000'}/invite/${query.invite}`}</code></Card>}
-    <div className="grid gap-5 lg:grid-cols-2"><Card title="Team memberships">{members.map(m=><div key={m.id} className="border-b py-3 text-sm"><strong>{m.name}</strong><p className="text-slate-500">{m.email} · {m.role} · {m.active?'active':'archived'}</p>{canManage&&m.role==='teacher'&&m.active&&<form action={archiveTeacher} className="mt-2"><input type="hidden" name="membershipId" value={m.id}/><button className="min-h-10 rounded-lg border px-3 font-bold">Archive teacher</button></form>}</div>)}</Card>
-    {canManage&&<Card title="Invite a team member" tone="blue"><form action={createInvitation} className="mt-4 space-y-4"><label className="block text-sm font-bold">Email<input required name="email" type="email" className={input}/></label><label className="block text-sm font-bold">Role<select name="role" className={input}><option value="teacher">Teacher</option><option value="manager">Manager</option></select></label><button className={button}>Generate invitation link</button></form></Card>}</div>
-    {canManage&&<div className="grid gap-5 lg:grid-cols-2"><AssignmentCard title="Assign teacher to student" action={assignStudentTeacher} teachers={teacherList} targets={studentList.map(s=>[s.id,s.displayName])}/><AssignmentCard title="Assign teacher to class" action={assignClassTeacher} teachers={teacherList} targets={classList.map(c=>[c.id,c.name])} classMode/></div>}
-    <Card title="Current assignments">{classLinks.length+studentLinks.length?<div className="grid gap-3 sm:grid-cols-2">{classLinks.map(x=><div key={`${x.class_teachers.classId}-${x.class_teachers.membershipId}`} className="rounded-lg border p-3 text-sm"><strong>{x.classes.name}</strong><p>Teacher {x.class_teachers.membershipId.slice(0,8)} · {x.class_teachers.assignment}</p>{canManage&&<form action={removeClassTeacher}><input type="hidden" name="classId" value={x.class_teachers.classId}/><input type="hidden" name="membershipId" value={x.class_teachers.membershipId}/><button className="mt-2 font-bold text-rose-700">Remove</button></form>}</div>)}{studentLinks.map(x=><div key={`${x.teacher_students.studentId}-${x.teacher_students.membershipId}`} className="rounded-lg border p-3 text-sm"><strong>{x.students.displayName}</strong><p>Teacher {x.teacher_students.membershipId.slice(0,8)}</p>{canManage&&<form action={removeStudentTeacher}><input type="hidden" name="studentId" value={x.teacher_students.studentId}/><input type="hidden" name="membershipId" value={x.teacher_students.membershipId}/><button className="mt-2 font-bold text-rose-700">Remove</button></form>}</div>)}</div>:<Empty>No assignments yet.</Empty>}</Card>
-    <Card title="Invitations">{invites.length?invites.map(i=><p key={i.id} className="border-b py-3 text-sm">{i.email} · {i.role} · <strong>{invitationState(i)}</strong></p>):<Empty>No invitations created.</Empty>}</Card></>;
+export default async function TeachersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ invite?: string; error?: string }>;
+}) {
+  const ctx = await requireWorkspace();
+  const query = await searchParams;
+  const canManage = ["owner", "manager"].includes(ctx.membership.role);
+  const invites = await db
+    .select()
+    .from(invitations)
+    .where(eq(invitations.academyId, ctx.academy.id));
+  const members = await db
+    .select({
+      id: memberships.id,
+      role: memberships.role,
+      active: memberships.active,
+      name: user.name,
+      email: user.email,
+    })
+    .from(memberships)
+    .innerJoin(user, eq(user.id, memberships.userId))
+    .where(eq(memberships.academyId, ctx.academy.id));
+  const teacherList = members.filter((m) => m.role === "teacher" && m.active);
+  const classList = await db
+    .select()
+    .from(classes)
+    .where(eq(classes.academyId, ctx.academy.id));
+  const studentList = await db
+    .select()
+    .from(students)
+    .where(eq(students.academyId, ctx.academy.id));
+  const classLinks = await db
+    .select()
+    .from(classTeachers)
+    .innerJoin(
+      classes,
+      and(
+        eq(classes.id, classTeachers.classId),
+        eq(classes.academyId, ctx.academy.id),
+      ),
+    );
+  const studentLinks = await db
+    .select()
+    .from(teacherStudents)
+    .innerJoin(
+      students,
+      and(
+        eq(students.id, teacherStudents.studentId),
+        eq(students.academyId, ctx.academy.id),
+      ),
+    );
+  return (
+    <>
+      <PageHeader
+        eyebrow="Team"
+        title="Teachers and assignments"
+        description="Current assignments control future access; historical lesson authorship is preserved."
+      />
+      {query.invite && (
+        <Card title="Copy this invitation link" tone="mint">
+          <code className="mt-3 block break-all rounded-lg bg-white p-3 text-xs">{`${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}/invite/${query.invite}`}</code>
+        </Card>
+      )}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Card title="Team memberships">
+          {members.map((m) => (
+            <div key={m.id} className="border-b py-3 text-sm">
+              <strong>{m.name}</strong>
+              <p className="text-slate-500">
+                {m.email} · {m.role} · {m.active ? "active" : "archived"}
+              </p>
+              {canManage && m.role === "teacher" && m.active && (
+                <form action={archiveTeacher} className="mt-2">
+                  <input type="hidden" name="membershipId" value={m.id} />
+                  <button className="min-h-10 rounded-lg border px-3 font-bold">
+                    Archive teacher
+                  </button>
+                </form>
+              )}
+            </div>
+          ))}
+        </Card>
+        {canManage && (
+          <Card title="Invite a team member" tone="blue">
+            <form action={createInvitation} className="mt-4 space-y-4">
+              <label className="block text-sm font-bold">
+                Email
+                <input required name="email" type="email" className={input} />
+              </label>
+              <FormSelect name="role" label="Role" defaultValue="teacher" options={[{value:"teacher",label:"Teacher"},{value:"manager",label:"Manager"}]}/>
+              <button className={button}>Generate invitation link</button>
+            </form>
+          </Card>
+        )}
+      </div>
+      {canManage && (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <AssignmentCard
+            title="Assign teacher to student"
+            action={assignStudentTeacher}
+            teachers={teacherList}
+            targets={studentList.map((s) => [s.id, s.displayName])}
+          />
+          <AssignmentCard
+            title="Assign teacher to class"
+            action={assignClassTeacher}
+            teachers={teacherList}
+            targets={classList.map((c) => [c.id, c.name])}
+            classMode
+          />
+        </div>
+      )}
+      <Card title="Current assignments">
+        {classLinks.length + studentLinks.length ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {classLinks.map((x) => (
+              <div
+                key={`${x.class_teachers.classId}-${x.class_teachers.membershipId}`}
+                className="rounded-lg border p-3 text-sm"
+              >
+                <strong>{x.classes.name}</strong>
+                <p>
+                  Teacher {x.class_teachers.membershipId.slice(0, 8)} ·{" "}
+                  {x.class_teachers.assignment}
+                </p>
+                {canManage && (
+                  <form action={removeClassTeacher}>
+                    <input
+                      type="hidden"
+                      name="classId"
+                      value={x.class_teachers.classId}
+                    />
+                    <input
+                      type="hidden"
+                      name="membershipId"
+                      value={x.class_teachers.membershipId}
+                    />
+                    <button className="mt-2 font-bold text-rose-700">
+                      Remove
+                    </button>
+                  </form>
+                )}
+              </div>
+            ))}
+            {studentLinks.map((x) => (
+              <div
+                key={`${x.teacher_students.studentId}-${x.teacher_students.membershipId}`}
+                className="rounded-lg border p-3 text-sm"
+              >
+                <strong>{x.students.displayName}</strong>
+                <p>Teacher {x.teacher_students.membershipId.slice(0, 8)}</p>
+                {canManage && (
+                  <form action={removeStudentTeacher}>
+                    <input
+                      type="hidden"
+                      name="studentId"
+                      value={x.teacher_students.studentId}
+                    />
+                    <input
+                      type="hidden"
+                      name="membershipId"
+                      value={x.teacher_students.membershipId}
+                    />
+                    <button className="mt-2 font-bold text-rose-700">
+                      Remove
+                    </button>
+                  </form>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Empty>No assignments yet.</Empty>
+        )}
+      </Card>
+      <Card title="Invitations">
+        {invites.length ? (
+          invites.map((i) => (
+            <p key={i.id} className="border-b py-3 text-sm">
+              {i.email} · {i.role} · <strong>{invitationState(i)}</strong>
+            </p>
+          ))
+        ) : (
+          <Empty>No invitations created.</Empty>
+        )}
+      </Card>
+    </>
+  );
 }
 
-function AssignmentCard({title,action,teachers,targets,classMode=false}:{title:string;action:(form:FormData)=>Promise<void>;teachers:{id:string;name:string}[];targets:[string,string][];classMode?:boolean}){return <Card title={title}><form action={action} className="mt-3 space-y-3"><label className="block text-sm font-bold">Teacher<select name="membershipId" className={input}>{teachers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label><label className="block text-sm font-bold">{classMode?'Class':'Student'}<select name={classMode?'classId':'studentId'} className={input}>{targets.map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>{classMode&&<label className="block text-sm font-bold">Assignment<select name="assignment" className={input}><option value="main">Main teacher</option><option value="additional">Additional teacher</option><option value="substitute">Substitute teacher</option></select></label>}<button className={button}>Save assignment</button></form></Card>}
+function AssignmentCard({
+  title,
+  action,
+  teachers,
+  targets,
+  classMode = false,
+}: {
+  title: string;
+  action: (form: FormData) => Promise<void>;
+  teachers: { id: string; name: string }[];
+  targets: [string, string][];
+  classMode?: boolean;
+}) {
+  return (
+    <Card title={title}>
+      <form action={action} className="mt-3 space-y-3">
+        <FormSelect name="membershipId" label="Teacher" defaultValue={teachers[0]?.id} options={teachers.map(t=>({value:t.id,label:t.name}))} description={teachers.length?undefined:"Invite a teacher before creating assignments."}/>
+        <FormSelect name={classMode?"classId":"studentId"} label={classMode?"Class":"Student"} defaultValue={targets[0]?.[0]} options={targets.map(([value,label])=>({value,label}))}/>
+        {classMode && (
+          <FormSelect name="assignment" label="Assignment" defaultValue="main" options={[{value:"main",label:"Main teacher"},{value:"additional",label:"Additional teacher"},{value:"substitute",label:"Substitute teacher"}]}/>
+        )}
+        <button className={button}>Save assignment</button>
+      </form>
+    </Card>
+  );
+}

@@ -11,6 +11,7 @@ import {
 import { db } from "@/server/db";
 import { classes, classEnrollments, students } from "@/server/schema";
 import { requireWorkspace } from "@/server/session";
+import {FormSelect} from "@/components/server-form-controls";
 
 export default async function ClassesPage() {
   const ctx = await requireWorkspace();
@@ -88,13 +89,7 @@ export default async function ClassesPage() {
             <form action={createClass} className="mt-4 space-y-4">
               <Field name="name" label="Class name" />
               <Field name="track" label="Learning track" />
-              <label className="block text-sm font-bold">
-                Format
-                <select name="format" className={input}>
-                  <option value="one_to_one">One-to-one</option>
-                  <option value="small_group">Small group</option>
-                </select>
-              </label>
+              <FormSelect name="format" label="Format" defaultValue="one_to_one" options={[{value:"one_to_one",label:"One-to-one"},{value:"small_group",label:"Small group"}]}/>
               <fieldset>
                 <legend className="text-sm font-bold">Meeting days</legend>
                 <div className="mt-2 flex flex-wrap gap-3">
@@ -125,33 +120,9 @@ export default async function ClassesPage() {
             action={setClassEnrollment}
             className="mt-3 grid gap-3 sm:grid-cols-3"
           >
-            <label className="text-sm font-bold">
-              Class
-              <select name="classId" className={input}>
-                {list.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="text-sm font-bold">
-              Student
-              <select name="studentId" className={input}>
-                {studentList.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="text-sm font-bold">
-              Status
-              <select name="active" className={input}>
-                <option value="true">Enrolled</option>
-                <option value="false">Removed</option>
-              </select>
-            </label>
+            <FormSelect name="classId" label="Class" defaultValue={list[0]?.id} options={list.map(c=>({value:c.id,label:c.name}))}/>
+            <FormSelect name="studentId" label="Student" defaultValue={studentList[0]?.id} options={studentList.map(s=>({value:s.id,label:s.displayName}))}/>
+            <FormSelect name="active" label="Status" defaultValue="true" options={[{value:"true",label:"Enrolled"},{value:"false",label:"Removed"}]}/>
             <button className={`${button} sm:col-span-3`}>
               Update enrollment
             </button>

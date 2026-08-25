@@ -9,6 +9,7 @@ import {
 } from "@/server/schema";
 import { isPlatformAdmin, requireUser } from "@/server/session";
 import { changeAcademySubscription, savePlan } from "../actions";
+import {FormSelect} from "@/components/server-form-controls";
 export default async function Plans() {
   const session = await requireUser();
   if (!isPlatformAdmin(session.user.email)) notFound();
@@ -47,12 +48,7 @@ export default async function Plans() {
           >
             <input type="hidden" name="academyId" value={academy.id} />
             <strong>{academy.name}</strong>
-            <select name="subscriptionAction" className={input}>
-              <option value="extend_trial">Extend trial</option>
-              <option value="grace">Grant grace</option>
-              <option value="suspend">Suspend</option>
-              <option value="reactivate">Reactivate</option>
-            </select>
+            <FormSelect name="subscriptionAction" label="Subscription action" defaultValue="extend_trial" options={[{value:"extend_trial",label:"Extend trial"},{value:"grace",label:"Grant grace"},{value:"suspend",label:"Suspend"},{value:"reactivate",label:"Reactivate"}]}/>
             <input
               name="days"
               type="number"
@@ -111,17 +107,7 @@ function PlanForm({ plan }: { plan?: typeof subscriptionPlans.$inferSelect }) {
         label="Grace days"
         value={String(plan?.graceDays ?? 7)}
       />
-      <label className="text-sm font-bold">
-        Availability
-        <select
-          name="active"
-          defaultValue={String(plan?.active ?? true)}
-          className={input}
-        >
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
-      </label>
+      <FormSelect name="active" label="Availability" defaultValue={String(plan?.active??true)} options={[{value:"true",label:"Active"},{value:"false",label:"Inactive"}]}/>
       <button className={`${button} sm:col-span-2`}>Save plan</button>
     </form>
   );
