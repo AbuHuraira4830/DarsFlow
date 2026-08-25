@@ -37,6 +37,10 @@ npm run db:seed
 npm run db:setup
 ```
 
+Hosted invitation-only pilots set `PILOT_MODE=invitation_only`. Only an unexpired invited email or an email explicitly listed in `PLATFORM_ADMIN_EMAILS` may create an account. Without Resend, invitation links must be copied and shared manually; the production email outbox is inaccessible and the application never claims delivery.
+
+After applying migrations to a new hosted database, run `npm run db:bootstrap:production`. This idempotent command creates only active plan definitions and required platform settings. It creates no academy, person, login credential, or demonstration data.
+
 The seed is safe to rerun. It creates fictional academy, student, guardian, class and configurable plan records. It deliberately creates no user account or predictable password. Register through `/register` to create an owner account and academy.
 
 ## Platform administrator

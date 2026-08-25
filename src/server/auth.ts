@@ -1,4 +1,6 @@
 import { betterAuth } from "better-auth";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./db";
 import * as schema from "./schema";
@@ -22,6 +24,13 @@ export const auth = betterAuth({
     revokeSessionsOnPasswordReset: true,
     resetPasswordTokenExpiresIn: 60 * 30,
   },
+  hooks: { before: createAuthMiddleware(async (ctx) => {
+    if (ctx.path !== "/sign-up/email" || env.PILOT_MODE !== "invitation_only") return;
+    const email = typeof ctx.body?.email === "string" ? ctx.body.email.trim().toLowerCase() : "";
+    const admins = env.PLATFORM_ADMIN_EMAILS.split(",").map((item) => item.trim().toLowerCase()).filter(Boolean);
+    const invited = email ? await db.select({ id: schema.invitations.id }).from(schema.invitations).where(and(eq(schema.invitations.email, email), isNull(schema.invitations.acceptedAt), gt(schema.invitations.expiresAt, new Date().toISOString()))).then((rows) => rows[0]) : null;
+    if (!admins.includes(email) && !invited) throw new APIError("FORBIDDEN", { message: "This pilot is invitation-only. Ask your academy administrator for an invitation link." });
+  }) },
   emailVerification: { sendOnSignUp: true, autoSignInAfterVerification: true, expiresIn: 60 * 60, sendVerificationEmail: async ({ user, url }) => { await sendTransactionalEmail({ kind:"verify", to:user.email, subject:"Verify your DarsFlow email", text:"Verify your email address to activate your academy account.", actionUrl:url, idempotencyKey:`verify:${user.id}:${new URL(url).searchParams.get("token")}` }); } },
   session: { expiresIn: 60 * 60 * 24 * 14, updateAge: 60 * 60 * 24 },
   rateLimit: { enabled: true, window: 60, max: 100, customRules: { "/sign-in/email": { window: 60, max: 5 }, "/sign-up/email": { window: 60, max: 3 }, "/request-password-reset": { window: 60, max: 3 }, "/send-verification-email": { window: 60, max: 3 } } },
