@@ -1,16 +1,20 @@
-import { mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { PGlite } from "@electric-sql/pglite";
+import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
+import { drizzle as drizzlePostgres } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
 
-const configuredPath = process.env.DATABASE_URL ?? "./data/darsflow.db";
-const databasePath = resolve(/* turbopackIgnore: true */ process.cwd(), configuredPath.replace(/^file:/, ""));
-mkdirSync(dirname(databasePath), { recursive: true });
+const url = process.env.DATABASE_URL?.trim();
+const hosted = Boolean(url?.startsWith("postgres://") || url?.startsWith("postgresql://"));
+const globalDatabase = globalThis as typeof globalThis & { darsflowPglite?: PGlite; darsflowPostgres?: ReturnType<typeof postgres> };
+const pglite = hosted ? undefined : (globalDatabase.darsflowPglite ??= new PGlite(url?.replace(/^pglite:/, "") || "./data/darsflow-pg"));
+const postgresClient = hosted ? (globalDatabase.darsflowPostgres ??= postgres(url!, { max: 5, prepare: false })) : undefined;
 
-const client = new Database(databasePath);
-client.pragma("foreign_keys = ON");
-client.pragma("journal_mode = WAL");
-
-export const db = drizzle(client, { schema });
-export { client as sqlite };
+export const db = hosted ? drizzlePostgres(postgresClient!, { schema }) : drizzlePglite(pglite!, { schema });
+export const databaseMode = hosted ? "postgres" : "pglite";
+export async function closeDatabase() {
+  if (postgresClient) await postgresClient.end();
+  if (pglite) await pglite.close();
+  delete globalDatabase.darsflowPostgres;
+  delete globalDatabase.darsflowPglite;
+}

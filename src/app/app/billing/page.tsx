@@ -9,10 +9,10 @@ import { requireWorkspace } from "@/server/session";
 export default async function Billing({ searchParams }: { searchParams: Promise<{ error?: string; submitted?: string }> }) {
   const ctx = await requireWorkspace();
   const query = await searchParams;
-  const subscription = db.select().from(academySubscriptions).where(eq(academySubscriptions.academyId, ctx.academy.id)).get();
-  const plan = subscription ? db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, subscription.planId)).get() : null;
-  const requests = db.select().from(paymentRequests).where(eq(paymentRequests.academyId, ctx.academy.id)).all();
-  const settings = db.select().from(platformSettings).where(eq(platformSettings.id, "default")).get();
+  const subscription = await db.select().from(academySubscriptions).where(eq(academySubscriptions.academyId, ctx.academy.id)).then((rows) => rows[0]);
+  const plan = subscription ? await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, subscription.planId)).then((rows) => rows[0]) : null;
+  const requests = await db.select().from(paymentRequests).where(eq(paymentRequests.academyId, ctx.academy.id));
+  const settings = await db.select().from(platformSettings).where(eq(platformSettings.id, "default")).then((rows) => rows[0]);
   const remaining = subscription?.trialEndsAt ? trialDaysRemaining(subscription.trialEndsAt) : 0;
 
   return <>

@@ -18,7 +18,7 @@ DarsFlow is a mobile-first, multi-tenant SaaS MVP for Quran, Arabic and Islamic 
 
 ## Local setup
 
-Requires Node.js 20.9 or newer and npm. Docker and external accounts are not required.
+Requires Node.js 20.9 or newer and npm. Docker and external accounts are not required. Local development uses PGlite, a real embedded PostgreSQL engine, stored under `data/darsflow-pg` by default.
 
 ```bash
 npm install
@@ -62,15 +62,11 @@ git diff --check
 - Password recovery uses Better Auth’s expiring-token architecture. Until an email provider is configured, no recovery email is claimed as sent.
 - No AI, WhatsApp Business, transactional email or payment provider is configured.
 
-## Production migration
+## PostgreSQL environments
 
-SQLite is for local development and single-instance evaluation. Before storing customer data in production:
+DarsFlow uses one Drizzle `pg-core` schema and one PostgreSQL migration history. Local development and integration tests use PGlite. Hosted environments use the transaction-capable `postgres` driver with a Neon pooled `DATABASE_URL`; migrations may use a direct `DATABASE_MIGRATION_URL`.
 
-1. Provision managed PostgreSQL and durable backups.
-2. Convert the Drizzle schema/configuration to the PostgreSQL dialect and generate a reviewed migration.
-3. Configure production secrets through the hosting provider’s secret store.
-4. Run migrations as a release step and validate tenant-isolation tests; do not copy the local SQLite file.
-5. Select real email and payment providers only after the business chooses them.
+Run `npm run db:migrate` once during a release. Migrations never run during requests. Hosted environments have no SQLite or writable-filesystem fallback. The pre-existing SQLite database and legacy migration history remain preserved but are not read by the application.
 
 ## Current limitations
 

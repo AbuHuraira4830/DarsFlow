@@ -12,9 +12,9 @@ export async function requireUser() {
 }
 export async function requireWorkspace() {
   const current = await requireUser();
-  const membership = db.select().from(memberships).where(and(eq(memberships.userId, current.user.id), eq(memberships.active, true))).get();
+  const membership = await db.select().from(memberships).where(and(eq(memberships.userId, current.user.id), eq(memberships.active, true))).then((rows) => rows[0]);
   if (!membership) redirect("/onboarding");
-  const academy = db.select().from(academies).where(eq(academies.id, membership.academyId)).get();
+  const academy = await db.select().from(academies).where(eq(academies.id, membership.academyId)).then((rows) => rows[0]);
   if (!academy?.onboardingComplete) redirect("/onboarding");
   return { ...current, membership, academy };
 }

@@ -1,19 +1,19 @@
 {
   "version": "7",
-  "dialect": "sqlite",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "6",
-      "when": 1787584101081,
-      "tag": "0000_initial_saas_schema",
+      "version": "7",
+      "when": 1787658144977,
+      "tag": "0000_postgresql_baseline",
       "breakpoints": true
     },
     {
       "idx": 1,
-      "version": "6",
-      "when": 1787652725830,
-      "tag": "0001_pilot_release",
+      "version": "7",
+      "when": 1787658716268,
+      "tag": "0001_tenant_indexes",
       "breakpoints": true
     }
   ]

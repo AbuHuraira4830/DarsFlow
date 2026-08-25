@@ -2,7 +2,8 @@ import { z } from "zod";
 
 const optionalUrl = z.string().url().optional().or(z.literal(""));
 const schema = z.object({
-  DATABASE_URL: z.string().min(1).default("./data/darsflow.db"),
+  DATABASE_URL: z.string().min(1).default("pglite:./data/darsflow-pg"),
+  DATABASE_MIGRATION_URL: z.string().min(1).optional(),
   BETTER_AUTH_SECRET: z.string().min(32).optional(),
   BETTER_AUTH_URL: optionalUrl,
   RESEND_API_KEY: z.string().startsWith("re_").optional(),
