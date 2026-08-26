@@ -48,6 +48,34 @@ test("public custom select supports keyboard selection",async({page})=>{
   await expect(teacher).not.toContainText("Choose teacher");
 });
 
+test("public visitor can explore conversion pages and submit an access request",async({page},testInfo)=>{
+  await page.goto("/");
+  await expect(page.getByRole("heading",{name:/Finish every class/})).toBeVisible();
+  await page.getByRole("button",{name:"Load approved sample"}).click();
+  await expect(page.getByText("Assalamu alaikum",{exact:false}).first()).toBeVisible();
+  await page.goto("/pricing");
+  await expect(page.getByRole("heading",{name:/Capacity that grows/})).toBeVisible();
+  await expect(page.getByText("Contact us for pricing").first()).toBeVisible();
+  await page.goto("/request-access");
+  await page.getByLabel("Academy name").fill(`Fictional Prospect ${testInfo.project.name}`);
+  await page.getByLabel("Contact person").fill("Fictional Applicant");
+  await page.getByLabel("Email address").fill(`prospect.${testInfo.project.name}.${Date.now()}@example.test`);
+  await page.getByLabel("WhatsApp number").fill("+923001234567");
+  await page.getByLabel("Approximate active students").fill("30");
+  await page.getByLabel("Approximate teachers").fill("4");
+  await page.getByLabel("Qaida").check();
+  await page.getByText(/I understand DarsFlow/).click();
+  await page.getByRole("button",{name:"Request access"}).click();
+  await expect(page.getByRole("status")).toContainText("request has been received");
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth)).toBe(false);
+});
+
+test("public policy pages load and lead management is protected",async({page})=>{
+  for(const path of ["/privacy","/terms","/contact"]){await page.goto(path);await expect(page.locator("h1")).toBeVisible()}
+  await page.goto("/platform/leads");
+  await expect(page).toHaveURL(/\/login/);
+});
+
 test("unauthenticated academy and export routes are protected",async({page})=>{
   await page.goto("/app/students");
   await expect(page).toHaveURL(/\/login/);

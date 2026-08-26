@@ -149,7 +149,8 @@ export function DarsFlowDemo() {
           </a>
           <div className="flex items-center gap-2">
             <a href="/login" className="hidden min-h-10 items-center px-3 text-sm font-bold text-slate-600 sm:inline-flex">Sign in</a>
-            <a href="/register" className={`${primaryButton} min-h-9 px-3.5 py-2 text-xs sm:min-h-10 sm:px-4 sm:text-sm`}>Start free trial <ArrowIcon /></a>
+            <a href="/pricing" className="hidden min-h-10 items-center px-3 text-sm font-bold text-slate-600 md:inline-flex">Pricing</a>
+            <a href="/request-access" className={`${primaryButton} min-h-9 px-3.5 py-2 text-xs sm:min-h-10 sm:px-4 sm:text-sm`}>Request access <ArrowIcon /></a>
           </div>
         </div>
       </header>
@@ -169,7 +170,7 @@ export function DarsFlowDemo() {
                 Turn a teacher’s lesson observation into a parent update, next-teacher handover and management summary—ready to review in one calm workspace.
               </p>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                <a href="/register" className={primaryButton}>Start free trial <ArrowIcon /></a>
+                <a href="/request-access" className={primaryButton}>Request access <ArrowIcon /></a>
                 <button type="button" onClick={() => handleLoadSample(true)} className={secondaryButton}>Try interactive demo</button>
               </div>
               <p className="mt-4 flex items-center gap-2 text-xs font-medium text-slate-500">
@@ -237,9 +238,10 @@ export function DarsFlowDemo() {
         <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-5 py-10 sm:px-8 md:grid-cols-[1fr_auto] md:items-end lg:px-12">
           <div>
             <DarsFlowLogo />
-            <p className="mt-4 max-w-2xl text-sm leading-6">A validation prototype for clearer academy communication. All names are fictional, nothing is saved or sent, and every draft requires human review.</p>
+            <p className="mt-4 max-w-2xl text-sm leading-6">Clearer lesson communication for Quran, Arabic and Islamic studies academies. Demo names are fictional, nothing is saved or sent, and every draft requires human review.</p>
+            <nav className="mt-4 flex flex-wrap gap-4 text-sm font-bold"><a href="/pricing">Pricing</a><a href="/request-access">Request access</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/contact">Contact</a></nav>
           </div>
-          <p className="rounded-full border border-teal-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 shadow-sm">No AI · No database · No external sending</p>
+          <p className="rounded-full border border-teal-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 shadow-sm">Fictional demo · manual review · user-initiated sharing</p>
         </div>
       </footer>
       <p className="sr-only" aria-live="assertive" aria-atomic="true">{announcement}</p>
@@ -370,6 +372,7 @@ function OutputWorkspace({ outputs, copyState, outputRef, onCopy, activeOutput, 
           onCopy={() => onCopy(activeOutput, current.title)}
           flags={activeOutput === "managementSummary" ? outputs?.managementFlags : undefined}
         />
+        {outputs && <a href="/request-access" className={`${primaryButton} mb-4 w-full`}>Request academy access <ArrowIcon /></a>}
         <p className="flex items-start gap-2 px-1 text-xs leading-5 text-slate-500"><ShieldIcon /> Drafts stay in this session and are never sent automatically.</p>
       </div>
     </section>

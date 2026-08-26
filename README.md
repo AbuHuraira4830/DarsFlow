@@ -14,6 +14,8 @@ DarsFlow is a mobile-first, multi-tenant SaaS MVP for Quran, Arabic and Islamic 
 - WhatsApp and email compose links with honest share semantics
 - Academy dashboard, lesson history, subscription usage and manual-payment requests
 - Restricted platform administration configured by email allowlist
+- Public pricing, contact, provisional policy and spam-protected academy access-request pages
+- Platform lead review, status history, configurable public support channels and secure owner invitations
 - Fictional, idempotent local seed data with no seeded login password
 
 ## Local setup
@@ -38,6 +40,8 @@ npm run db:setup
 ```
 
 Hosted invitation-only pilots set `PILOT_MODE=invitation_only`. Only an unexpired invited email or an email explicitly listed in `PLATFORM_ADMIN_EMAILS` may create an account. Without Resend, invitation links must be copied and shared manually; the production email outbox is inaccessible and the application never claims delivery.
+
+Prospects use `/request-access`; requests are stored as platform-level leads and never create academy records. A platform administrator reviews them at `/platform/leads`, then may generate a seven-day, single-use owner invitation and share it manually. Configure the optional public business name, support email, WhatsApp number and support hours from `/platform`; no contact detail is invented when these fields are blank.
 
 After applying migrations to a new hosted database, run `npm run db:bootstrap:production`. This idempotent command creates only active plan definitions and required platform settings. It creates no academy, person, login credential, or demonstration data.
 

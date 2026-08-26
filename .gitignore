@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/test-results/
 
 # next.js
 /.next/
@@ -38,6 +39,7 @@ yarn-error.log*
 /data/*.db
 /data/*.db-*
 /data/darsflow-pg/
+/data/e2e-pg/
 
 # vercel
 .vercel
